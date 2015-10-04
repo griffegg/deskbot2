@@ -74,6 +74,7 @@ from omrond6t import *
 scriptpath = "../zilog_ZDMII"
 sys.path.append(os.path.abspath(scriptpath))
 from zilog_ZDMII import *
+from zilog_ZDMII_constants import *
 
 
 ###################################################################
@@ -300,6 +301,7 @@ CPU_105_ON = False      # the CPU can reach 105 easily
 MAIN_LOOP_COUNT = 0
 BADGE_GPIO_PIN = 38   # AKA: BCM GPIO 20
 BADGE = 0
+
 
 ###################################################################
 # Functions
@@ -567,6 +569,9 @@ try:
     # Set this to ADS1015 or ADS1115 depending on the ADC you are using!
     DISTANCE_HANDLE = ADS1x15(ic=ADS1115)
 
+# intitalize the Zilog motion sensor
+    MOTION_HANDLE = zilog_ZDMII("/dev/ttyAMA0")
+
 ################################
 # initialize the PID controller
 ################################
@@ -762,7 +767,13 @@ try:
 #        HUMAN_TEMP_MIN = ROOM_TEMP + SENSITIVITY
 
 # read the distance sensor
-        voltage = DISTANCE_HANDLE.readADCSingleEnded(0, gain, sps) / 1000
+        distance_in_mv = DISTANCE_HANDLE.readADCSingleEnded(0, gain, sps)
+        distance_in_cm = 27/(distance_in_mv/1000)
+
+# read the motion sensor
+# Light Threshold
+        current_light_level = MOTION_HANDLE.read_integer(ZDMII_READ_LIGHT_LEVEL)
+        print('Current light level: '+"%d"%current_light_level)
 
 # testing crash_and_burn
 #        crash_and_burn("testing")
@@ -958,14 +969,14 @@ try:
 
 # Area for distance measurement
             screen.fill(webcolors.name_to_rgb("cornflowerblue"), (0,0,SCREEN_DIMS[0],180))
-            text = font2.render('Distance: '+str(voltage), 1, webcolors.name_to_rgb("sienna"))
+            text = font2.render('Distance: %0.2f cm'%distance_in_cm, 1, webcolors.name_to_rgb("cornsilk"))
             text_pos = text.get_rect()
             text_pos.center = (SCREEN_DIMS[0]/2,90)
             screen.blit(text, text_pos)
 
 # Area for motion sensing
             screen.fill(webcolors.name_to_rgb("teal"), (0,180,SCREEN_DIMS[0],180))
-            text = font2.render('Motion: '+str(voltage), 1, webcolors.name_to_rgb("gold"))
+            text = font2.render('Light Level: %0.2f'%current_light_level, 1, webcolors.name_to_rgb("gold"))
             text_pos = text.get_rect()
             text_pos.center = (SCREEN_DIMS[0]/2,270)
             screen.blit(text, text_pos)
